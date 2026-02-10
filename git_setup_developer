@@ -1,0 +1,111 @@
+
+
+
+
+Step-by-Step SSH Setup (Complete Guide)
+1. Generate SSH Key Pair
+bash# Generate a new SSH key
+ssh-keygen -t ed25519 -C "your.email@gmail.com"
+
+# Prompts you'll see:
+# - File location: Press Enter (uses default ~/.ssh/id_ed25519)
+# - Passphrase: Press Enter twice (no passphrase) or type one for extra security
+What this creates:
+
+~/.ssh/id_ed25519 - Private key (NEVER share this)
+~/.ssh/id_ed25519.pub - Public key (safe to share)
+
+2. Set Correct Permissions
+bash# SSH requires strict permissions for security
+chmod 700 ~/.ssh                    # Directory: only you can access
+chmod 600 ~/.ssh/id_ed25519         # Private key: only you can read
+chmod 644 ~/.ssh/id_ed25519.pub     # Public key: you read/write, others read
+3. Add Key to SSH Agent
+bash# Start the SSH agent
+eval "$(ssh-agent -s)"
+
+# Add your private key to the agent
+ssh-add ~/.ssh/id_ed25519
+Why? The agent holds your key in memory so you don't need to enter your passphrase repeatedly.
+4. Copy Public Key
+bash# Display your public key
+cat ~/.ssh/id_ed25519.pub
+
+# Or copy directly to clipboard (macOS)
+cat ~/.ssh/id_ed25519.pub | pbcopy
+5. Add Public Key to GitHub
+
+Go to https://github.com/settings/keys
+Click "New SSH key"
+Title: "MacBook Personal" (or any descriptive name)
+Key type: Authentication Key
+Key: Paste your public key
+Click "Add SSH key"
+
+6. Test SSH Connection
+bash# Test authentication
+ssh -T git@github.com
+
+# Expected output:
+# Hi username! You've successfully authenticated, but GitHub does not provide shell access.
+7. Configure Repository to Use SSH
+bash# Check current remote URL
+git remote -v
+
+# If it shows HTTPS (https://github.com/...), change to SSH:
+git remote set-url origin git@github.com:username/repo-name.git
+
+# Verify the change
+git remote -v
+8. Push Your Code
+bash# Now you can push without credential prompts
+git push origin main
+For Multiple GitHub Accounts
+If you have work and personal accounts:
+bash# Create SSH config file
+nano ~/.ssh/config
+```
+
+Add:
+```
+# Personal GitHub
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# Work GitHub
+Host github-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes
+Then use different remotes:
+bash# Personal repos
+git remote set-url origin git@github.com:princythomas98/repo.git
+
+# Work repos
+git remote set-url origin git@github-work:princythomas-angelone/repo.git
+Quick Reference: First Time Push
+bash# 1. Initialize repo
+git init
+
+# 2. Add files
+git add .
+
+# 3. Commit
+git commit -m "Initial commit"
+
+# 4. Add remote (SSH)
+git remote add origin git@github.com:username/repo-name.git
+
+# 5. Push
+git push -u origin main
+# -u flag sets upstream, so future pushes just need: git push
+Why SSH Failed Initially
+Your error was "Permissions 0777 too open" because:
+
+chmod 777 = Everyone can read/write/execute
+SSH requires 600 (only you can read/write) for security
+If others can read your private key, they can impersonate you
